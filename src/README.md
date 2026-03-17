@@ -145,6 +145,7 @@ python3 train_torch.py \
 ```
 
 This saves a model checkpoint to `example-train.torch.pt` and logs to `example-train.torch.log`.
+Training skips queries with only one candidate (e.g., the first message in a conversation) to match DyNet behavior.
 
 ### Predict (PyTorch)
 

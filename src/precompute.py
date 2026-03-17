@@ -121,6 +121,9 @@ def precompute_split(split_name, filenames, args, token_to_id):
 
         samples = []
         for query, gold in links.items():
+            cand_indices = list(range(query, max(-1, query - args.max_dist), -1))
+            if split_name == "train" and len(cand_indices) == 1:
+                continue
             gold_filtered = [v for v in gold if v > query - args.max_dist]
             if split_name == "train" and len(gold_filtered) == 0:
                 continue
@@ -132,7 +135,7 @@ def precompute_split(split_name, filenames, args, token_to_id):
                 query_ids = get_ids(text_tok[query], token_to_id)
 
             features = []
-            for i in range(query, max(-1, query - args.max_dist), -1):
+            for i in cand_indices:
                 if token_to_id is not None:
                     ids = get_ids(text_tok[i], token_to_id)
                     cand_ids.append(ids)
@@ -201,4 +204,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

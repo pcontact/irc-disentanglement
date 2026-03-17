@@ -241,7 +241,8 @@ def main():
                 target = gold_mask / gold_counts
                 loss_per = -(target * log_probs).sum(dim=-1)
 
-                train_mask = (gold_mask.sum(dim=-1) > 0).float()
+                cand_counts = cand_mask.sum(dim=-1)
+                train_mask = ((gold_mask.sum(dim=-1) > 0) & (cand_counts > 1)).float()
                 denom = train_mask.sum().clamp(min=1.0)
                 loss_opt = (loss_per * train_mask).sum() / denom
                 loss_opt = loss_opt / max(1, args.grad_accum)

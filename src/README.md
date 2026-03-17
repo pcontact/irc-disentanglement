@@ -86,6 +86,89 @@ The second line is the precision, recall, and F-score.
 
 Note - the values in the paper are an average over 10 runs, so they will differ slightly from what you get here.
 
+## PyTorch (GPU-Accelerated)
+
+This repo also includes a PyTorch refactor that matches the DyNet model but uses precomputed features and batched GPU training.
+The workflow is:
+
+1. Precompute features and token IDs into `.pt` files
+2. Train with `train_torch.py`
+3. Predict with `predict_torch.py`
+
+### Expected Input File Format
+
+For each conversation `NAME`, the scripts expect the same file triplet as the DyNet code:
+
+- `NAME.ascii.txt`: whitespace-tokenized messages, one message per line, matching DyNet’s parser.
+- `NAME.tok.txt`: tokenized messages, one per line. If a line ends with `</s>`, it will be removed; if a line does not start with `<s>`, it will be inserted.
+- `NAME.annotation.txt`: gold links for training/dev. Each line lists message indices for a thread; the max index is the query, the min index is the linked message.
+
+You can pass any of these suffixes to `--train/--dev/--test`; the scripts strip the suffix to locate the other files.
+
+### Precompute
+
+```
+python3 precompute.py \
+  example-precompute \
+  --train ../data/train/*annotation.txt \
+  --dev ../data/dev/*annotation.txt \
+  --test ../data/test/*annotation.txt \
+  --word-vectors ../data/glove-ubuntu.txt \
+  --max-dist 101 \
+  --precomputed-dir ../data/precomputed
+```
+
+This writes per-conversation `.pt` files under `../data/precomputed/{train,dev,test}/` and a `manifest.jsonl` in `../data/precomputed/`.
+
+### Train (PyTorch)
+
+```
+python3 train_torch.py \
+  example-train.torch \
+  --precomputed-dir ../data/precomputed \
+  --word-vectors ../data/glove-ubuntu.txt \
+  --hidden 512 \
+  --layers 2 \
+  --nonlin softsign \
+  --epochs 20 \
+  --learning-rate 0.018804 \
+  --learning-decay-rate 0.103 \
+  --seed 10 \
+  --clip 3.740 \
+  --weight-decay 1e-07 \
+  --opt sgd \
+  --batch-size 64 \
+  --pin-memory \
+  --num-workers 2 \
+  --amp \
+  > example-train.torch.out 2>example-train.torch.err
+```
+
+This saves a model checkpoint to `example-train.torch.pt` and logs to `example-train.torch.log`.
+
+### Predict (PyTorch)
+
+```
+python3 predict_torch.py \
+  example-run.torch \
+  --model example-train.torch.pt \
+  --precomputed-dir ../data/precomputed \
+  --word-vectors ../data/glove-ubuntu.txt \
+  --hidden 512 \
+  --layers 2 \
+  --nonlin softsign \
+  --batch-size 128 \
+  > example-run.torch.out 2>example-run.torch.err
+```
+
+The output format matches DyNet exactly:
+
+```
+NAME.annotation.txt:QUERY_INDEX LINK_INDEX -
+```
+
+where `LINK_INDEX` is the predicted absolute message index (e.g., `query - prediction` in the DyNet code).
+
 ### Running on a file
 
 If you want to apply a model to a file, see this script for an example of how to do it: `example-running.sh`.

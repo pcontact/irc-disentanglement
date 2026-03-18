@@ -9,6 +9,7 @@ import torch
 
 from torch_common import (
     FEATURES,
+    get_log_path,
     get_features,
     get_ids,
     header,
@@ -184,7 +185,7 @@ def main():
     parser = build_parser()
     args = parser.parse_args()
 
-    log_file = open(args.prefix + ".precompute.log", "w")
+    log_file = open(get_log_path(args.prefix, ".precompute.log"), "w")
     header(sys.argv, [log_file, sys.stdout])
 
     token_to_id = None

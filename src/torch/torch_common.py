@@ -446,3 +446,13 @@ def expand_input_filenames(filenames):
             expanded.append(filename)
     return expanded
 
+
+def get_log_path(prefix, suffix):
+    repo_root = os.path.dirname(SRC_DIR)
+    logs_dir = os.path.join(repo_root, "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+    name = os.path.basename(prefix.rstrip("\\/"))
+    if name == "":
+        name = "run"
+    return os.path.join(logs_dir, name + suffix)
+

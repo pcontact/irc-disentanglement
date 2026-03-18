@@ -120,6 +120,7 @@ python3 torch/precompute.py \
 ```
 
 This writes per-conversation `.pt` files under `../data/precomputed/{train,dev,test}/` and a `manifest.jsonl` in `../data/precomputed/`.
+The run log is written to `../logs/example-precompute.precompute.log`.
 
 ### Train (PyTorch)
 
@@ -145,7 +146,7 @@ python3 torch/train_torch.py \
   > example-train.torch.out 2>example-train.torch.err
 ```
 
-This saves a model checkpoint to `example-train.torch.pt` and logs to `example-train.torch.log`.
+This saves a model checkpoint to `example-train.torch.pt` and writes logs to `../logs/example-train.torch.log`.
 Training skips queries with only one candidate (e.g., the first message in a conversation) to match DyNet behavior.
 
 ### Predict (PyTorch)
@@ -170,6 +171,7 @@ NAME.annotation.txt:QUERY_INDEX LINK_INDEX -
 ```
 
 where `LINK_INDEX` is the predicted absolute message index (e.g., `query - prediction` in the DyNet code).
+Prediction run logs are written to `../logs/example-run.torch.log`.
 
 ### Running on a file
 

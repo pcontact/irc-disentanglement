@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from torch_common import header
+from torch_common import get_log_path, header
 from torch_dataset import PrecomputedDataset, collate_batch
 from torch_model import DisentanglementModel
 
@@ -147,7 +147,7 @@ def main():
     parser = build_parser()
     args = parser.parse_args()
 
-    log_file = open(args.prefix + ".log", "w")
+    log_file = open(get_log_path(args.prefix, ".log"), "w")
     header(sys.argv, [log_file, sys.stdout])
 
     random.seed(args.seed)

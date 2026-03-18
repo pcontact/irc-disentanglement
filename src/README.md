@@ -146,7 +146,12 @@ python3 torch/train_torch.py \
   > example-train.torch.out 2>example-train.torch.err
 ```
 
-This saves a model checkpoint to `example-train.torch.pt` and writes logs to `../logs/example-train.torch.log`.
+This saves the best model weights to `example-train.torch.pt`, writes a latest resume checkpoint to
+`example-train.torch.latest.pt` each epoch, and writes periodic resume checkpoints like
+`example-train.torch.epoch5.pt` every 5 epochs. Logs go to `../logs/example-train.torch.log`.
+To resume training, pass `--model` pointing at a resume checkpoint (for example,
+`example-train.torch.latest.pt`). If `--model` points at a weights-only file like
+`example-train.torch.pt`, training starts fresh but with those weights loaded.
 Training skips queries with only one candidate (e.g., the first message in a conversation) to match DyNet behavior.
 
 ### Predict (PyTorch)

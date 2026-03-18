@@ -200,12 +200,80 @@ def main():
 
     scaler = torch.cuda.amp.GradScaler(enabled=args.amp and device.type == "cuda")
 
+    def build_checkpoint(
+        epoch_value,
+        step_value,
+        seen_value,
+        next_report_value,
+        prev_best_value,
+    ):
+        checkpoint = {
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "scaler_state_dict": scaler.state_dict(),
+            "epoch": epoch_value,
+            "step": step_value,
+            "seen": seen_value,
+            "next_report": next_report_value,
+            "prev_best": prev_best_value,
+            "rng_state": {
+                "python": random.getstate(),
+                "numpy": np.random.get_state(),
+                "torch": torch.get_rng_state(),
+            },
+            "args": vars(args),
+        }
+        if torch.cuda.is_available():
+            checkpoint["rng_state"]["cuda"] = torch.cuda.get_rng_state_all()
+        return checkpoint
+
     prev_best = None
     step = 0
     seen = 0
     next_report = args.report_freq
+    start_epoch = 0
 
-    for epoch in range(args.epochs):
+    if args.model:
+        loaded = torch.load(args.model, map_location=device)
+        if isinstance(loaded, dict) and "model_state_dict" in loaded:
+            model.load_state_dict(loaded["model_state_dict"])
+            if "optimizer_state_dict" in loaded:
+                try:
+                    optimizer.load_state_dict(loaded["optimizer_state_dict"])
+                except Exception:
+                    pass
+            if "scaler_state_dict" in loaded:
+                try:
+                    scaler.load_state_dict(loaded["scaler_state_dict"])
+                except Exception:
+                    pass
+            prev_best = loaded.get("prev_best", None)
+            step = loaded.get("step", 0)
+            seen = loaded.get("seen", 0)
+            next_report = loaded.get("next_report", args.report_freq)
+            start_epoch = loaded.get("epoch", 0)
+            rng_state = loaded.get("rng_state", {})
+            if "python" in rng_state:
+                random.setstate(rng_state["python"])
+            if "numpy" in rng_state:
+                np.random.set_state(rng_state["numpy"])
+            if "torch" in rng_state:
+                torch.set_rng_state(rng_state["torch"])
+            if torch.cuda.is_available() and "cuda" in rng_state:
+                torch.cuda.set_rng_state_all(rng_state["cuda"])
+            print(
+                "Resuming from {} (epoch {}, step {})".format(
+                    args.model, start_epoch, step
+                ),
+                file=log_file,
+            )
+            log_file.flush()
+        else:
+            model.load_state_dict(loaded)
+            print("Loaded model weights from {}".format(args.model), file=log_file)
+            log_file.flush()
+
+    for epoch in range(start_epoch, args.epochs):
         model.train()
         optimizer.param_groups[0]["lr"] = args.learning_rate / (
             1.0 + args.learning_decay_rate * epoch
@@ -295,6 +363,31 @@ def main():
             scaler.step(optimizer)
             scaler.update()
             optimizer.zero_grad(set_to_none=True)
+
+        next_epoch = epoch + 1
+        latest_path = args.prefix + ".latest.pt"
+        torch.save(
+            build_checkpoint(
+                next_epoch,
+                step,
+                seen,
+                next_report,
+                prev_best,
+            ),
+            latest_path,
+        )
+        if next_epoch % 5 == 0:
+            periodic_path = "{}.epoch{}.pt".format(args.prefix, next_epoch)
+            torch.save(
+                build_checkpoint(
+                    next_epoch,
+                    step,
+                    seen,
+                    next_report,
+                    prev_best,
+                ),
+                periodic_path,
+            )
 
         if prev_best is not None and epoch - prev_best[1] > 5:
             break

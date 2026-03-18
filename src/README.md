@@ -89,11 +89,12 @@ Note - the values in the paper are an average over 10 runs, so they will differ 
 ## PyTorch (GPU-Accelerated)
 
 This repo also includes a PyTorch refactor that matches the DyNet model but uses precomputed features and batched GPU training.
+All PyTorch-port code lives under `src/torch/`.
 The workflow is:
 
 1. Precompute features and token IDs into `.pt` files
-2. Train with `train_torch.py`
-3. Predict with `predict_torch.py`
+2. Train with `torch/train_torch.py`
+3. Predict with `torch/predict_torch.py`
 
 ### Expected Input File Format
 
@@ -108,7 +109,7 @@ You can pass any of these suffixes to `--train/--dev/--test`; the scripts strip 
 ### Precompute
 
 ```
-python3 precompute.py \
+python3 torch/precompute.py \
   example-precompute \
   --train ../data/train/*annotation.txt \
   --dev ../data/dev/*annotation.txt \
@@ -123,7 +124,7 @@ This writes per-conversation `.pt` files under `../data/precomputed/{train,dev,t
 ### Train (PyTorch)
 
 ```
-python3 train_torch.py \
+python3 torch/train_torch.py \
   example-train.torch \
   --precomputed-dir ../data/precomputed \
   --word-vectors ../data/glove-ubuntu.txt \
@@ -150,7 +151,7 @@ Training skips queries with only one candidate (e.g., the first message in a con
 ### Predict (PyTorch)
 
 ```
-python3 predict_torch.py \
+python3 torch/predict_torch.py \
   example-run.torch \
   --model example-train.torch.pt \
   --precomputed-dir ../data/precomputed \

@@ -4,6 +4,7 @@ import json
 import os
 import string
 import time
+import glob
 
 import numpy as np
 
@@ -353,7 +354,7 @@ def get_features(name, query_no, link_no, text_ascii, text_tok, info, target_inf
 def load_conversations(filenames, is_test, test_start, test_end):
     conversations = []
     done = set()
-    for filename in filenames:
+    for filename in expand_input_filenames(filenames):
         name = filename
         for ending in [".annotation.txt", ".ascii.txt", ".raw.txt", ".tok.txt"]:
             if filename.endswith(ending):
@@ -426,4 +427,17 @@ def write_manifest(manifest_path, records):
     with open(manifest_path, "w", encoding="utf-8") as handle:
         for record in records:
             handle.write(json.dumps(record) + "\n")
+
+
+def expand_input_filenames(filenames):
+    expanded = []
+    for filename in filenames:
+        if glob.has_magic(filename):
+            matches = sorted(glob.glob(filename))
+            if len(matches) == 0:
+                raise FileNotFoundError("No files matched pattern: {}".format(filename))
+            expanded.extend(matches)
+        else:
+            expanded.append(filename)
+    return expanded
 

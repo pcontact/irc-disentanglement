@@ -4,10 +4,11 @@ This folder contains code for reproducing our disentanglement experiments.
 
 ## Requirements
 
-The only dependency is the [DyNet library](http://dynet.readthedocs.io), which can usually be installed with:
+The DyNet path now uses offline preprocessing plus NumPy-backed feature artifacts.
+At minimum, install:
 
 ```
-pip3 install dynet
+pip3 install numpy dynet
 ```
 
 ## Running
@@ -20,7 +21,37 @@ python3 disentangle.py --help
 
 ### Train
 
-To train, provide the `--train` argument followed by a series of filenames.
+The DyNet workflow is now:
+
+1. Precompute fixed-pair `.pkl` artifacts
+2. Train from those artifacts with batched updates
+3. Predict from the saved `.dy.model`
+
+`disentangle.py` will automatically create compatible precomputed artifacts in `data/precomputed_dynet/`
+when they are missing, but it is usually nicer to run preprocessing explicitly first.
+
+### Precompute
+
+```
+python3 data/preprocess.py \
+  example-precompute \
+  --train ../data/train/*annotation.txt \
+  --dev ../data/dev/*annotation.txt \
+  --test ../data/test/*annotation.txt \
+  --word-vectors ../data/glove-ubuntu.txt \
+  --max-dist 101 \
+  --precomputed-dir ../data/precomputed_dynet
+```
+
+This writes per-conversation `.pkl` files under `../data/precomputed_dynet/{train,dev,test}/`
+plus a `manifest.jsonl` in `../data/precomputed_dynet/`.
+Artifacts are tied to `--max-dist`, the test window, and the word-vector file hash.
+If any of those change, regenerate the precomputed data.
+
+### Train
+
+To train, provide `--train` and `--dev` file lists. The example below keeps the original ACL
+model shape, but uses the new precompute + batched DyNet training path.
 
 The example command below will train a model with the same parameters as used in the ACL paper.
 The model is a feedforward neural network with 2 layers, 512 dimensional hidden vectors, and softsign non-linearities.
@@ -30,12 +61,14 @@ python3 disentangle.py \
   example-train \
   --train ../data/train/*annotation.txt \
   --dev ../data/dev/*annotation.txt \
+  --precomputed-dir ../data/precomputed_dynet \
   --hidden 512 \
   --layers 2 \
   --nonlin softsign \
   --word-vectors ../data/glove-ubuntu.txt \
   --epochs 20 \
-  --dynet-autobatch \
+  --batch-size 64 \
+  --dynet-mem 4096 \
   --drop 0 \
   --learning-rate 0.018804 \
   --learning-decay-rate 0.103 \
@@ -46,6 +79,14 @@ python3 disentangle.py \
   > example-train.out 2>example-train.err
 ```
 
+Notes:
+
+- DyNet autobatching is now enabled by default; use `--no-dynet-autobatch` to turn it off.
+- GPU is used by default when DyNet supports it; use `--dynet-cpu` to force CPU mode.
+- Mini dev evaluation runs during training, and full dev evaluation runs at the end of each epoch.
+- `--speed-profile balanced` and `--speed-profile fast` provide smaller `max-dist` / model-size presets without changing explicit flags.
+- If you use `--opt adam` without setting `--learning-rate`, the code defaults to `0.001`.
+
 ### Infer
 
 This command will run the model trained above on the development set:
@@ -54,6 +95,7 @@ This command will run the model trained above on the development set:
 python3 disentangle.py \
   example-run.1 \
   --model example-train.dy.model \
+  --precomputed-dir ../data/precomputed_dynet \
   --test ../data/dev/*annotation* \
   --test-start 1000 \
   --test-end 2000 \
@@ -61,10 +103,16 @@ python3 disentangle.py \
   --layers 2 \
   --nonlin softsign \
   --word-vectors ../data/glove-ubuntu.txt \
+  --batch-size 128 \
   > example-run.1.out 2>example-run.1.err
 ```
 
-Note - the arguments defining the network (hidden, layers, nonlin), must match those given in training.
+Note - the arguments defining the network (`hidden`, `layers`, `nonlin`, and `word-vectors`) must match training.
+Prediction output is unchanged:
+
+```
+NAME.annotation.txt:QUERY_INDEX LINK_INDEX -
+```
 
 ### Evaluate
 

@@ -23,7 +23,12 @@ def apply_nonlin(expr, nonlin: str):
     if nonlin == "selu":
         return dy.selu(expr)
     if nonlin == "softsign":
-        return dy.softsign(expr)
+        dims, _ = expr.dim()
+        if len(dims) <= 1:
+            return dy.softsign(expr)
+        # Older DyNet Python bindings reject matrix-valued softsign inputs.
+        flat = dy.reshape(expr, (int(np.prod(dims)),))
+        return dy.reshape(dy.softsign(flat), dims)
     if nonlin == "swish":
         return dy.cmult(expr, dy.logistic(expr))
     raise ValueError("Unknown non-linearity: {}".format(nonlin))

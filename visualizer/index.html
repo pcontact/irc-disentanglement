@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Transcript Graph Visualizer</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <p class="eyebrow">IRC Disentanglement</p>
+        <h1>Transcript Graph Visualizer</h1>
+        <p class="hero-copy">
+          Load a transcript JSONL file to inspect message-to-message reply links as
+          curved arcs, grouped by conversation thread.
+        </p>
+      </section>
+
+      <section class="controls-panel">
+        <div
+          id="dropzone"
+          class="dropzone"
+          tabindex="0"
+          role="button"
+          aria-label="Upload a transcript JSONL file"
+        >
+          <input id="file-input" type="file" accept=".jsonl,.json,.txt" hidden />
+          <p class="dropzone-title">Drop a `.jsonl` transcript here</p>
+          <p class="dropzone-copy">or click to choose a file from disk</p>
+        </div>
+
+        <div class="toolbar">
+          <button id="reset-button" type="button" class="secondary-button" disabled>
+            Clear Selection
+          </button>
+          <div class="loaded-file">
+            <span class="label">Loaded file</span>
+            <strong id="loaded-file-name">None yet</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="status-grid">
+        <article class="card">
+          <h2>Validation</h2>
+          <dl id="stats-grid" class="stats-grid">
+            <div>
+              <dt>Rows</dt>
+              <dd>0</dd>
+            </div>
+            <div>
+              <dt>Roots</dt>
+              <dd>0</dd>
+            </div>
+            <div>
+              <dt>Invalid targets</dt>
+              <dd>0</dd>
+            </div>
+            <div>
+              <dt>Duplicate ids</dt>
+              <dd>0</dd>
+            </div>
+            <div>
+              <dt>Parse errors</dt>
+              <dd>0</dd>
+            </div>
+          </dl>
+          <ul id="validation-list" class="diagnostic-list">
+            <li>No file loaded yet.</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <h2>How To Read It</h2>
+          <ul class="helper-list">
+            <li>Each row is a message sorted by `id`.</li>
+            <li>Curved arcs connect a message to its `outgoing_edge_target_id`.</li>
+            <li>Matching colors indicate the same connected conversation.</li>
+            <li>Hover to inspect a local reply neighborhood.</li>
+            <li>Click a row to pin one conversation and fade the rest.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="viewer-card">
+        <div class="viewer-header">
+          <div>
+            <p class="label">Transcript</p>
+            <h2 id="viewer-title">Waiting for a file</h2>
+          </div>
+          <p class="viewer-note">The graph redraws when the layout changes.</p>
+        </div>
+
+        <div id="viewer-viewport" class="viewer-viewport">
+          <div id="viewer-scene" class="viewer-scene">
+            <svg
+              id="edges-layer"
+              class="edges-layer"
+              aria-hidden="true"
+              preserveAspectRatio="none"
+            ></svg>
+            <div id="transcript-list" class="transcript-list">
+              <div class="empty-state">
+                <h3>No transcript loaded</h3>
+                <p>Use the drop zone above to load a transcript JSONL file.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

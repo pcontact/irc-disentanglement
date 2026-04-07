@@ -102,6 +102,7 @@ These are a set of tools for converting annotations:
 
 Tool                             | Purpose
 -------------------------------- | ---------------
+parse_disentangle_output.py      | Convert `disentangle.py` output plus `.ascii.txt` transcripts into per-conversation transcript JSONL.
 output-from-py-to-graph.py       | Convert the output of the model into our graph format.
 graph-to-cluster.py              | Convert a set of links into a set of conversations with Union-Find.
 cluster-to-messages.py           | Print out the actual messages that a set of conversations correspond to.

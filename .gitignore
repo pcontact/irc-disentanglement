@@ -5,3 +5,5 @@ __pycache__/
 
 # C++ compiled object code
 *.o
+
+.codex
